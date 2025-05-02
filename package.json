@@ -1,0 +1,31 @@
+{
+  "name": "bun-hono-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "make": "bun ./scripts/make.ts",
+    "start": "bun --watch index.ts"
+  },
+  "pre-commit": [
+    "ts.check",
+    "build",
+    "add-build"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dayjs": "^1.11.13",
+    "dotenv": "^16.4.5",
+    "hono": "^4.7.8",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/body-parser": "^1.19.5",
+    "@types/express": "^5.0.1",
+    "pre-commit": "^1.2.2",
+    "typescript": "^5.8.3",
+    "@types/bun": "latest"
+  },
+  "private": true
+}
