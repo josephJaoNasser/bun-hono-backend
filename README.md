@@ -2,8 +2,7 @@
 Backend boiler plate is inspired by laravel. This backend is fairly simple to use with the routes and controllers being dynamically imported.
 
 # Creating a route
-The route is the endpoint which interfaces the API with the client. However do note that **ROUTE FILES ARE NOT TO BE EDITED**, and
-the your logic should be in the controllers.
+The route is the endpoint which interfaces the API with the client.
 
 The syntax is as follows:
 
