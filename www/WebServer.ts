@@ -1,9 +1,9 @@
-import fs = require("fs");
-import path = require("path");
+import path from "path";
 import loadDefaultMiddleware from "./DefaultMiddleware/loadDefaultMiddleware";
 import logger from "@/utils/logger";
 import { Route } from "@/types";
 import { Hono } from "hono";
+import { Glob } from "bun";
 
 class WebServer {
   _app: Hono;
@@ -13,38 +13,32 @@ class WebServer {
   constructor() {
     this._app = new Hono();
     this._loadDefaultMiddlewares();
-    this._dynamicallyLoadRoutes();
   }
 
   _loadDefaultMiddlewares() {
     loadDefaultMiddleware(this._app);
   }
 
-  _dynamicallyLoadRoutes() {
-    const routeFolderContents = fs.readdirSync(
-      path.join(__dirname, "../routes"),
-      { withFileTypes: true }
-    );
+  async _dynamicallyLoadRoutes() {
+    const routeDir = path.join(__dirname, "../routes");
+    const glob = new Glob("**.route.ts");
+    let routes: Route[] = [];
 
-    const routes: Route[] = routeFolderContents
-      .filter((dirent) => dirent.isFile())
-      .map((file) => file.name)
-      .filter(
-        (file) => file.endsWith(".route.ts") || file.endsWith(".route.js")
-      )
-      .map((routeFileName) => {
-        const pathName = path.join(__dirname, `../routes/${routeFileName}`);
-        logger.info(`Adding route: ../routes/${routeFileName}`);
-        const routeFile = require(pathName);
-        const route = routeFile.default || routeFile;
+    for await (const file of glob.scan({ cwd: routeDir, onlyFiles: true })) {
+      const pathName = path.join(__dirname, `../routes/${file}`);
+      logger.info(`Adding route: ../routes/${file}`);
+      const routeFile = require(pathName);
+      const route: Route = routeFile.default || routeFile;
+      if (!route.path) {
+        route.path = file.split(".route")[0];
+      }
 
-        if (!route.path) {
-          route.path = routeFileName.split(".route")[0];
-        }
+      routes.push(route);
+    }
 
-        return route;
-      })
-      .sort((a, b) => a.order - b.order);
+    routes = routes
+      .filter((r) => !!r)
+      .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0));
 
     for (const route of routes) {
       this._app.route(route.path, route.route);
@@ -55,7 +49,9 @@ class WebServer {
     console.log("\n");
   }
 
-  start() {
+  async start() {
+    await this._dynamicallyLoadRoutes();
+
     const PORT = process.env.PORT || this.DEFAULT_PORT;
     Bun.serve({
       port: PORT,
